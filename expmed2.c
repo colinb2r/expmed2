@@ -102,14 +102,15 @@ choose_multiplier_v2 (unsigned HOST_WIDE_INT d, int n, int precision,
 
   gcc_assert (lgup <= n);
 
-  if (d <= 1)
+  if (lgup <= 0 || precision < lgup)
     {
       /* It's easier to deal with d = 1 separately, as that
          is the only d for which we need to be very careful
-         about avoiding shifting bits by >= HOST_BITS_PER_WIDE_INT. */ 
-      *multiplier_ptr = CMUHWI1 << (n - precision);
+         about avoiding shifting bits by >= HOST_BITS_PER_WIDE_INT.
+         It's also easier to deal with PRECISION < lgup separately. */
+      *multiplier_ptr = lgup <= 0 ? CMUHWI1 << (n - precision) : 0;
       *post_shift_ptr = 0;
-      *lgup_ptr = 0;
+      *lgup_ptr = lgup;
       return 1;
     }
 
@@ -143,8 +144,9 @@ choose_multiplier_v2 (unsigned HOST_WIDE_INT d, int n, int precision,
   /* Starting at N+lgup-1 instead of N+lgup works *except* when PRECISION<lgup
      and d=2^(lgup-1)+j, where j>0 is small: sometimes mlow<2^N<=mhigh<2^(N+1).
      A kludge fix is for this case: multiplier = 0, post_shift = 0; return 0.
-     A better fix is: shiftv = N + lgup - (PRECISION < lgup ? 2 : 1);  */
-  shiftv = n + lgup - (precision < lgup ? 2 : 1);
+     A better fix is: shiftv = N + lgup - (PRECISION < lgup ? 2 : 1); but
+     that might not work if PRECISION=N-1. So for now use the kludge fix.  */
+  shiftv = n + lgup - 1;
   if (shiftv < HOST_BITS_PER_WIDE_INT)
     {
       mlowv = CMUHWI1 << shiftv;
@@ -225,12 +227,13 @@ choose_multiplier_v4 (unsigned HOST_WIDE_INT d, int n, int precision,
 
   gcc_assert (lgup <= n);
 
-  if (d <= 1)
+  if (lgup <= 0 || precision < lgup)
     {
       /* It's easier to deal with d = 1 separately, as that
          is the only d for which we need to be very careful
-         about avoiding shifting bits by >= HOST_BITS_PER_WIDE_INT. */ 
-      *multiplier_ptr = CMUHWI1 << (n - precision);
+         about avoiding shifting bits by >= HOST_BITS_PER_WIDE_INT.
+         It's also easier to deal with PRECISION < lgup separately. */
+      *multiplier_ptr = lgup <= 0 ? CMUHWI1 << (n - precision) : 0;
       *post_shift_ptr = 0;
       *lgup_ptr = lgup;
       return 1;
@@ -316,7 +319,7 @@ range_test_v2 (int n, int precision,
       neqor |= neq;
       if (neq)
         {
-          if ((countmgt + countneq) == 0)
+          if (neq == 1 ? countmgt == 0 : countneq < 5)
             test_v2 (n, precision, dd + 1, 1, &shift_diff);
           if (neq == 1) countmgt += 1;
           else countneq += 1;
@@ -392,7 +395,9 @@ int main()
   range_test_v2 (32, 30, u, 1000*1000, 1);
   range_test_v2 (32, 29, u, 1000*1000, 1);
   range_test_v2 (32, 28, u, 1000*1000, 1);
-  range_test_v2 (32, 27, u, 1000*1000, 1);
+  range_test_v2 (32, 20, u, 1000*1000, 1);
+  range_test_v2 (32, 19, u, 1000*1000, 1);
+  range_test_v2 (32, 18, u, 1000*1000, 1);
   exit (0);
 }
 
