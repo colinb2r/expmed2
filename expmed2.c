@@ -104,14 +104,13 @@ choose_multiplier_v2 (unsigned HOST_WIDE_INT d, int n, int precision,
 
   if (lgup <= 0 || precision < lgup)
     {
-      /* It's easier to deal with d = 1 separately, as that
-         is the only d for which we need to be very careful
-         about avoiding shifting bits by >= HOST_BITS_PER_WIDE_INT.
-         It's also easier to deal with PRECISION < lgup separately. */
-      *multiplier_ptr = lgup <= 0 ? CMUHWI1 << (n - precision) : 0;
+      /* It's easier to deal separately with d=1 and PRECISION<lgup;
+         if d=1 we need to avoid shifting bits by >= HOST_BITS_PER_WIDE_INT,
+         and it's awkward to deal with PRECISION<lgup in the main code.  */
+      *multiplier_ptr = d <= 1 ? CMUHWI1 << (n - precision) : 0;
       *post_shift_ptr = 0;
       *lgup_ptr = lgup;
-      return 1;
+      return d <= 1 ? 1 : 0;
     }
 
   /* Calculate, if necessary by iterating upwards:
@@ -119,7 +118,7 @@ choose_multiplier_v2 (unsigned HOST_WIDE_INT d, int n, int precision,
        0 <= mlowv = 2^(N+lgup-1) - d * mlow < d;
      there may be "overflows" but that's mostly OK as using unsigned integers.
      Then mlow <= mhigh = floor((2^(N+lgup-1)+2^(N+lgup-1-PRECISION))/d) < 2^n.
-     An unlikely case is PRECISION<lgup: we could just use mhigh=0, shiftv=0.
+     An unlikely case is PRECISION<lgup: we can use mhigh=0, shiftv=0.
 
      This avoids using wide_int; an alternative using wide_int twice
      is replace the first "else" part below by:
@@ -229,14 +228,13 @@ choose_multiplier_v4 (unsigned HOST_WIDE_INT d, int n, int precision,
 
   if (lgup <= 0 || precision < lgup)
     {
-      /* It's easier to deal with d = 1 separately, as that
-         is the only d for which we need to be very careful
-         about avoiding shifting bits by >= HOST_BITS_PER_WIDE_INT.
-         It's also easier to deal with PRECISION < lgup separately. */
-      *multiplier_ptr = lgup <= 0 ? CMUHWI1 << (n - precision) : 0;
+      /* It's easier to deal separately with d=1 and PRECISION<lgup;
+         if d=1 we need to avoid shifting bits by >= HOST_BITS_PER_WIDE_INT,
+         and it's awkward to deal with PRECISION<lgup in the main code.  */
+      *multiplier_ptr = d <= 1 ? CMUHWI1 << (n - precision) : 0;
       *post_shift_ptr = 0;
       *lgup_ptr = lgup;
-      return 1;
+      return d <= 1 ? 1 : 0;
     }
 
   topbit = 0;
